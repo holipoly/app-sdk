@@ -1,0 +1,59 @@
+name: QA
+on: [pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+    env:
+      HUSKY: 0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PNPM
+        uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # v3.0.0
+        with:
+          run_install: |
+            - args: [--frozen-lockfile]
+      - name: Check linter
+        run: pnpm lint
+      - name: Check types
+        run: pnpm check-types
+
+  test:
+    runs-on: ubuntu-22.04
+    env:
+      HUSKY: 0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PNPM
+        uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # v3.0.0
+        with:
+          run_install: |
+            - args: [--frozen-lockfile]
+      - name: Run tests
+        run: pnpm test:ci
+      - name: Generate coverage report
+        uses: irongut/CodeCoverageSummary@51cc3a756ddcd398d447c044c02cb6aa83fdae95 # v1.3.0
+        if: ${{ github.actor != 'dependabot[bot]' }}
+        with:
+          filename: coverage/cobertura-coverage.xml
+          format: markdown
+          output: file
+      - name: Add Coverage PR Comment
+        uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31 # v2.9.0
+        if: ${{ github.event_name == 'pull_request' &&  github.actor != 'dependabot[bot]' }}
+        with:
+          recreate: true
+          path: code-coverage-results.md
+
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      HUSKY: 0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PNPM
+        uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # v3.0.0
+        with:
+          run_install: |
+            - args: [--frozen-lockfile]
+      - name: Build package
+        run: pnpm build

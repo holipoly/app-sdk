@@ -1,0 +1,34 @@
+name: Open release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    name: Prepare release with Changesets
+    runs-on: ubuntu-22.04
+    env:
+      HUSKY: 0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT }}
+      - name: Setup PNPM
+        uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # v3.0.0
+        with:
+          run_install: |
+            - args: [--frozen-lockfile]
+      - name: Create Release Pull Request
+        uses: changesets/action@e2f8e964d080ae97c874b19e27b12e0a8620fb6c # v1.4.6
+        with:
+          title: Release to npm
+          commit: Release to npm
+          publish: "pnpm publish:ci-prod"
+        env:
+          # Use private access token so Github can trigger another workflow from this one
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
